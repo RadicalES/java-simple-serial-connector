@@ -1,3 +1,7 @@
+jSSC-2.8.0.res Update version by Jan Zwiegers (02.04.2014)
+	Add support for close of serial port notification.
+	Especially needed for USB devices.
+
 jSSC-2.8.0 Release version (24.01.2014)
 
 This version contains native libs for Windows(x86, x86-64), Linux(x86, x86-64, ARM soft & hard float), Solaris(x86, x86-64), Mac OS X(x86, x86-64, PPC, PPC64).

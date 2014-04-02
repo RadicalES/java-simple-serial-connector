@@ -654,7 +654,9 @@ JNIEXPORT jboolean JNICALL Java_jssc_SerialNativeInterface_sendBreak
  */
 int getLinesStatus(jlong portHandle) {
     int statusLines;
-    ioctl(portHandle, TIOCMGET, &statusLines);
+    if(ioctl(portHandle, TIOCMGET, &statusLines) < 0) {
+        statusLines = -1;
+    }
     return statusLines;
 }
 
@@ -680,6 +682,13 @@ void getInterruptsCount(jlong portHandle, int intArray[]) {
         intArray[3] = icount->overrun;
         intArray[4] = icount->parity;
     }
+    else {
+        intArray[0] = -1;
+        intArray[1] = -1;
+        intArray[2] = -1;
+        intArray[3] = -1;
+        intArray[4] = -1;
+    }
     delete icount;
 #endif
 }
@@ -689,6 +698,7 @@ const jint INTERRUPT_TX = 1024;
 const jint INTERRUPT_FRAME = 2048;
 const jint INTERRUPT_OVERRUN = 4096;
 const jint INTERRUPT_PARITY = 8192;
+const jint EV_CLOSED = 32768;
 
 const jint EV_CTS = 8;
 const jint EV_DSR = 16;
@@ -708,7 +718,8 @@ const jint events[] = {INTERRUPT_BREAK,
                        EV_RLSD,
                        EV_RXCHAR,
                        //EV_RXFLAG, //Not supported
-                       EV_TXEMPTY};
+                       EV_TXEMPTY,
+                        EV_CLOSED};
 
 /* OK */
 /*
@@ -717,17 +728,23 @@ const jint events[] = {INTERRUPT_BREAK,
  */
 JNIEXPORT jobjectArray JNICALL Java_jssc_SerialNativeInterface_waitEvents
   (JNIEnv *env, jobject object, jlong portHandle) {
+    
+    int err = 0;
 
     jclass intClass = env->FindClass("[I");
     jobjectArray returnArray = env->NewObjectArray(sizeof(events)/sizeof(jint), intClass, NULL);
 
     /*Input buffer*/
     jint bytesCountIn = 0;
-    ioctl(portHandle, FIONREAD, &bytesCountIn);
+    if(ioctl(portHandle, FIONREAD, &bytesCountIn) < 0) {
+        err++;
+    }
     
     /*Output buffer*/
     jint bytesCountOut = 0;
-    ioctl(portHandle, TIOCOUTQ, &bytesCountOut);
+    if(ioctl(portHandle, TIOCOUTQ, &bytesCountOut) < 0) {
+        err++;
+    }
 
     /*Lines status*/
     int statusLines = getLinesStatus(portHandle);
@@ -755,6 +772,10 @@ JNIEXPORT jobjectArray JNICALL Java_jssc_SerialNativeInterface_waitEvents
     /*RLSD(DCD) status*/
     if(statusLines & TIOCM_CAR){
         statusRLSD = 1;
+    }
+    
+    if(statusLines == -1){
+        err++;
     }
 
     /*Interrupts*/
@@ -807,6 +828,9 @@ JNIEXPORT jobjectArray JNICALL Java_jssc_SerialNativeInterface_waitEvents
                 goto forEnd;*/
             case EV_TXEMPTY:
                 returnValues[1] = bytesCountOut;
+                goto forEnd;
+            case EV_CLOSED:
+                returnValues[1] = err;
                 goto forEnd;
         }
         forEnd: {
