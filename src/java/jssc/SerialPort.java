@@ -94,6 +94,7 @@ public class SerialPort {
     public static final int MASK_BREAK = 64;
     public static final int MASK_ERR = 128;
     public static final int MASK_RING = 256;
+    public static final int MASK_CLOSED = 32768;
 
 
     //since 0.8 ->
@@ -1155,6 +1156,7 @@ public class SerialPort {
         private int preDSR;
         private int preRLSD;
         private int preRING;
+        private int preCLOSED;
 
         //Need to get initial states
         public LinuxEventThread(){
@@ -1189,6 +1191,9 @@ public class SerialPort {
                         break;
                     case MASK_RLSD:
                         preRLSD = eventValue;
+                        break;
+                    case MASK_CLOSED:
+                        preCLOSED = eventValue;
                         break;
                 }
             }
@@ -1292,6 +1297,14 @@ public class SerialPort {
                             case MASK_TXEMPTY:
                                 if(((mask & MASK_TXEMPTY) == MASK_TXEMPTY) && (eventValue == 0) && interruptTxChanged){
                                     sendEvent = true;
+                                }
+                                break;
+                            case MASK_CLOSED: /*DCD*/
+                                if(eventValue != preCLOSED){
+                                    preCLOSED = eventValue;
+                                    if((mask & MASK_CLOSED) == MASK_CLOSED){
+                                        sendEvent = true;
+                                    }
                                 }
                                 break;
                         }
