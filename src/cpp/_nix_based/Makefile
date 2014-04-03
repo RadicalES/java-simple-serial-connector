@@ -1,7 +1,7 @@
 CXX=g++
 CPPFLAGS=-fPIC
-CPPFLAGS+=-I/usr/lib/jvm/jdk1.7.0_51/include
-CPPFLAGS+=-I/usr/lib/jvm/jdk1.7.0_51/include/linux
+CPPFLAGS+=-I/usr/lib/jvm/jdk1.7.0_09/include
+CPPFLAGS+=-I/usr/lib/jvm/jdk1.7.0_09/include/linux
 
 all: jssc
 
